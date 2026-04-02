@@ -20,7 +20,6 @@ The program creates a basic HTTP server using **TCP Sockets**. It listens for in
 ### How to compile the project:
    ```bash
    g++ -std=c++17 server.cpp -o file_server
- **run the program**
 ```
 ### How to run the command (server side)
    To share a file, pass its path as an argument when launching the program. If the filename has spaces, wrap it in quotes: 
