@@ -1,0 +1,27 @@
+name: Cross-Platform Build Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    #esegue il test su entrambi i sistemi operativi
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Compile (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: g++ server.cpp -o server_linux
+
+    - name: Compile (Windows)
+      if: runner.os == 'Windows'
+      run: g++ server.cpp -o server_win.exe
