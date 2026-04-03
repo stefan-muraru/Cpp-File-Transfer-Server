@@ -16,7 +16,7 @@ The program creates a basic HTTP server using **TCP Sockets**. It listens for in
 
 
 ## Installation & Usage
-**download the file "server.cpp"**
+***download the file "server.cpp"***
 ### How to compile the project:
    ```bash
    g++ -std=c++17 server.cpp -o file_server
