@@ -1,153 +1,150 @@
 #include <iostream>
-#include <fstream> // stream di file 
-#include <string> // stringhe
+#include <fstream> // stream di files 
+#include <string> // for strings
 #include <cstring>
-#include <vector> // vettori
-#include <filesystem> //per estrarre facilmente il nome del file
-#include <signal.h> //per mantenere il segnale durante il download del file
+#include <vector> // for vectors
+#include <filesystem> //to estract easily the name of the file
+#include <signal.h> //to mantain the signal during the download of the file
 
-//intestazioni specifiche per il networking linux (POSIX)
-#include <sys/socket.h> //libreria per i socket linux
-#include <netinet/in.h> // Strutture per gli indirizzi Internet (IP/Porte)
-#include <unistd.h>     // Per funzioni di sistema come close()
-/* programma che fa funzionare il computer ubuntu come server per trasmettere file
-    tra computer e telefono iphone
-*/
+//specific headers for Linux networking (POSIX)
+#include <sys/socket.h> //library for Linux socketset linux
+#include <netinet/in.h> // structures for Internet addresses (IP/Ports)
+#include <unistd.h>     // for system functions like close()
+
 
 int main(int argc, char* argv[]){
 
-    signal(SIGPIPE, SIG_IGN); // Ignora l'errore se l'iPhone chiude la connessione bruscamente
+    signal(SIGPIPE, SIG_IGN); // ignore the error if the iPhone abruptly closes the connection
 
-    //CONTROLLO ARGOMENTI
-    //argc è il numero di argomenti. agrv[0] è il nome del programma, arg[1] il nome del file
+    //ARGUMENT CHECKING
+    //argc is the number of arguments. agrv[0] is the name of the program, arg[1] is the name of the file
     if(argc<2){
-        std::cerr<<"Errore: devi specificare un file.\n";
-        std::cerr<<"Esempio: "<<argv[0]<<" immagine.jpg"<<std::endl;
+        std::cerr<<"error: you must specify a file.\n";
+        std::cerr<<"exemple: "<<argv[0]<<" image.jpg"<<std::endl;
         return 1;
     }
 
-    //variabili per il nome e il percorso del file
-    std::string percorso_completo = argv[1];
-    //estraggo solo il nome (esmepio: "foto.jpg") dal persocorso completo 
-    std::string nome_file_destinazione=std::filesystem::path(percorso_completo).filename().string();
+    //variables for the file name and path
+    std::string complete_path = argv[1];
+    //extract only the name(example: "image.jpg") from the full path
+    std::string destination_file_name=std::filesystem::path(complete_path).filename().string();
 
     //DICHIARAZIONE VARIABILI PER IL SOCKET
-    int server_fd;                  //file descriptor del socket server
-    int nuovo_socket;               //file descriptor per la connessione accettata
-    struct sockaddr_in address;     //struttura per l'indirizzo IP e la porta
-    int opt=1;                      //opzione per il riutilizzo della porta
-    int porta=80;                 //porta utilizzata
+    int server_fd;                  //server socket file descriptor
+    int new_socket;               //accepted connection file descriptor
+    struct sockaddr_in address;     //structure for the IP address and port
+    int opt=1;                      //option for reusing the port
+    int port=80;                 //used port
 
-    //CREAZIONE DEL SOCKET
+    //SOCKET CREATION
     //AF_INET: IPv4 | SOCK_STREAM: TCP
     server_fd=socket(AF_INET, SOCK_STREAM, 0);
     if(server_fd < 0){ 
-        perror("Apertura socket fallita");
+        perror("socket opening failed");
         return 1;
     }
 
-    //CONFIGURAZIONE PORTA (evita l'errore "address already in use")
+    //PORT CONFIGURATION (avoids the "address already in use" error)
     if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
-        perror("Errore setsockopt");
+        perror("setsockopt error");
         return 1;
     }
 
-    // Inizializzazione memoria struttura (Previene crash su Linux)
+    // initialize structure memory (prevents crashes on Linux)
     memset(&address, 0, sizeof(address));
 
-    address.sin_family=AF_INET;         // accetta connessioni da qualsiasi interfaccia (Wi-fi/Eth)
-    address.sin_addr.s_addr=INADDR_ANY; // Accetta connessioni da ogni IP locale
-    address.sin_port = htons(porta);    // impongo ascolto della porta
+    address.sin_family=AF_INET;         // accepts connection from any interface (Wi-fi/Eth)
+    address.sin_addr.s_addr=INADDR_ANY; // accepts connection from any local IP
+    address.sin_port = htons(port);    // set listening on the port
 
     //BIND E LISTEN
     if(bind(server_fd, (struct sockaddr*)&address, sizeof(address))<0){
-        perror("Bind fallito");
+        perror("Bind failed");
         return 1;
     }
 
-    if (listen(server_fd, 10) < 0){ // controllo di listen
-        perror("Listen fallita"); 
+    if (listen(server_fd, 10) < 0){ // listen control
+        perror("Listen failed"); 
         return 1; 
     }
 
-    //INTERFACCIA GRAFICA
+    //GRAFICAL INTERFACE (server side)
     std::cout<<"=========================================================================="<<std::endl;
-    std::cout<<"        SERVER AVVIATO"<<std::endl;
-    std::cout<<"        file in condivisione: "<<nome_file_destinazione<<std::endl;
-    std::cout<<"        collegati con iphone a http://192.168.1.106:"<<porta<<std::endl;
-    std::cout<<"        (ATTENZIONE: usa http, non https!)"<<std::endl;
+    std::cout<<"        SERVER STARTED"<<std::endl;
+    std::cout<<"        file being shared: "<<destination_file_name<<std::endl;
+    std::cout<<"        connect with your phone at http://192.168.1.106:"<<port<<std::endl;
+    std::cout<<"        (CAUTION: use HTTP, not HTTPS!)"<<std::endl;
     std::cout<<"=========================================================================="<<std::endl;
 
-    //LOOP DI ACCETTAZIONE
+    //CONNECTION ACCEPT LOOP
     while(true){
 
-        // VARIABILI PER IL CLIENT (L'IPHONE)
+        // VARIABLES FOR THE CLIENT (PHONE)
         struct sockaddr_in client_addr;
         socklen_t client_len = sizeof(client_addr);
 
-        //CHIAMATA CORRECTA AD ACCEPT
-        // client_addr e client_len, non la struttura del server!
-        nuovo_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len); //nuovo socket
+        //CORRECT CALL TO ACCEPT
+        // client_addr & client_len, not the structure of the server!
+        new_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len); //new socket
 
-        if(nuovo_socket<0){
-            perror("Errore nell'accettare la connessione");
-            sleep(1); // se c'è errore critico meglio fermarsi un'attimo
+        if(new_socket<0){
+            perror("error accepting connection");
+            sleep(1); // if there is a critical error it's better to stop for a moment
             continue;
         }
 
-        //AGGIUNTA --> mettere il server in ascolto prima di mandare tutto il file
-        //questa aggiunta è necessaria poichè se no iphone interromperà il download del file
-        char richiesta_client[4096];
-        int byte_ricevuti=recv(nuovo_socket, richiesta_client, sizeof(richiesta_client)-1, 0);
-        if(byte_ricevuti>0){
-            richiesta_client[byte_ricevuti]='\0';
-            //per vedere cosa dice iphone decommentare la riga sotto
-            // std::cout<<"richiesta iphone: \n"<<richiesta_client<<std::endl;
+        //ADDITION --> put the server in listen mode before sending the whole file
+        //this addition is necessary because otherwise iPhone will interrupt the file downloas
+        char client_request[4096];
+        int byte_received=recv(new_socket, client_request, sizeof(client_request)-1, 0);
+        if(byte_received>0){
+            client_request[byte_received]='\0';
+            //to see what the phone says, uncomment the line below
+            // std::cout<<"client request: \n"<<client_request<<std::endl;
         }
 
-        //apertura file in modalità binaria
-        std::ifstream file(percorso_completo, std::ios::binary | std::ios::ate);
+        //open file in binary mode
+        std::ifstream file(complete_path, std::ios::binary | std::ios::ate);
         if(!file.is_open()){
-            std::cerr<<"impossibile aprire il file: "<<percorso_completo<<std::endl;
+            std::cerr<<"error: unable to open the file: "<<complete_path<<std::endl;
             std::string msg404="HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-            send(nuovo_socket, msg404.c_str(), msg404.size(), 0);
-            close(nuovo_socket);
+            send(new_socket, msg404.c_str(), msg404.size(), 0);
+            close(new_socket);
             continue;
         }
 
-        //calcolo dimensione
-        std::streamsize dimensione_file=file.tellg();
+        //calculate size
+        std::streamsize size_file=file.tellg();
         file.seekg(0, std::ios::beg);
 
-        //costruzione header HTTP (usando nome del file originale)
-        // Corretti "Lenght" -> "Length" e "clore" -> "close"
+        //HTTP header construction (using original file name)
         std::string header=
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/octet-stream\r\n"
-            "Content-Disposition: attachment; filename=\"" + nome_file_destinazione + "\"\r\n"
-            "Content-Length: " + std::to_string(dimensione_file) + "\r\n"
+            "Content-Disposition: attachment; filename=\"" + destination_file_name + "\"\r\n"
+            "Content-Length: " + std::to_string(size_file) + "\r\n"
             "Connection: close\r\n\r\n";
 
-        //invio header
-        send(nuovo_socket, header.c_str(), header.size(), 0);
+        //send header
+        send(new_socket, header.c_str(), header.size(), 0);
 
-        //invio contenuto a blocchi
-        std::vector<char> buffer(16384); //buffer da 16KB 
+        //send content in blocks
+        std::vector<char> buffer(16384); //16KB buffer
         while(file.good()){
             file.read(buffer.data(), buffer.size());
-            std::streamsize bytes_letti=file.gcount();
-            if(bytes_letti>0){
-                if(send(nuovo_socket, buffer.data(), bytes_letti, 0)<0){
-                    std::cerr<<"connessione interrotta da IPHONE"<<std::endl;
+            std::streamsize bytes_readed=file.gcount();
+            if(bytes_readed>0){
+                if(send(new_socket, buffer.data(), bytes_readed, 0)<0){
+                    std::cerr<<"connection interrupted by PHONE"<<std::endl;
                     break;
                 }
             }
         }
 
-        std::cout<<"File '" << nome_file_destinazione << "' inviato con successo!"<<std::endl;
+        std::cout<<"File '" << destination_file_name << "' sent successfully!"<<std::endl;
 
         file.close();
-        close(nuovo_socket);
+        close(new_socket);
     }
 
     close(server_fd);
