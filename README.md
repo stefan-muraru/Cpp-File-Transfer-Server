@@ -2,7 +2,7 @@
 This project is licensed under the MIT License - feel free to use, modify, and share it!
 
 # C++ Local File Sharing Server
->🚧**Current status:** Full code translation in progress (ENG)
+>🚧 **Current status:** Full code translation in progress (ENG)
 
 A simple, high-performance command-line utility written in **C++** to share files from a **Linux** machine to any device with a web browser (optimized for **iPhone/iOS**) over a local network.
 
@@ -60,4 +60,14 @@ The server will start, display your local IP address, and stay active (listening
 * **Buffer & Memory**: Files are streamed in 16KB chunks using `std::vector<char>`, allowing for high-speed transfers without filling up the RAM, even for large files.
 * **Request Clearing**: The server reads the client's request buffer (`recv`) before responding to ensure the TCP window is clear, preventing protocol synchronization errors.
 
-A Project Done By Stefan Muraru.
+## Roadmap & Upcoming Goals
+You can follow the detailed progress of the work on my [Project Board](INSERT YOUR PROJECT LINK HERE).
+
+- [ ] **Full Translation (In Progress)**: Converting all code comments and system logs from Italian to English to make the project international.
+- [ ] **Cross-Platform Support (Windows)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
+- [ ] **Multi-file Support**: Implemented the ability to share entire folders or multiple files at once.
+- [ ] **Web Interface (UI)**: Replaced the direct download with a minimal HTML page for a better mobile user experience.
+- [ ] **HTTPS Security**: OpenSSL integration to secure data transfer within the local network.
+- [ ] **Progress Bar**: Real-time display of the loading percentage in the terminal.
+
+A Project Done (and in progress) By Stefan Muraru.
