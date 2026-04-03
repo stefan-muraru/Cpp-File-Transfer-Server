@@ -5,17 +5,29 @@
 #include <vector> // for vectors
 #include <filesystem> //to estract easily the name of the file
 #include <signal.h> //to mantain the signal during the download of the file
+#ifdef _WIN32
+    /*-------FOR WINDOWS-------*/
+    #include <winsock2.h>  // library for windows
+    #include <ws2tcpip.h>
+    #include <windows.h> //for sleep()
+    #pragma comment(lib, "ws2_32.lib") //instruction for the linker on windows
 
-//specific headers for Linux networking (POSIX)
-#include <sys/socket.h> //library for Linux socketset linux
-#include <netinet/in.h> // structures for Internet addresses (IP/Ports)
-#include <unistd.h>     // for system functions like close()
+    #define CLOSE_SOCKET closesocket
+    typedef int socklen_t; // Windows uses int for address length in accept()
+#else
+    /*-------FOR LINUX-------*/
+    #include <sys/socket.h> //library for Linux socketset linux
+    #include <netinet/in.h> // structures for Internet addresses (IP/Ports)
+    #include <unistd.h>     // for system functions like close()
 
+    #define CLOSE_SOCKET close
+#endif
 
 int main(int argc, char* argv[]){
 
+#ifndef _WIN32// if NOT defined WINDOWS 
     signal(SIGPIPE, SIG_IGN); // ignore the error if the iPhone abruptly closes the connection
-
+#endif
     //ARGUMENT CHECKING
     //argc is the number of arguments. agrv[0] is the name of the program, arg[1] is the name of the file
     if(argc<2){
@@ -29,7 +41,16 @@ int main(int argc, char* argv[]){
     //extract only the name(example: "image.jpg") from the full path
     std::string destination_file_name=std::filesystem::path(complete_path).filename().string();
 
-    //DICHIARAZIONE VARIABILI PER IL SOCKET
+#ifdef _WIN32
+    // WINSOCK INITIALIZATION (Strictly required for Windows)
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        std::cerr << "WSAStartup failed." << std::endl;
+        return 1;
+    }
+#endif
+
+    //VARIABLE DECLARATION FOR THE SOCKET
     int server_fd;                  //server socket file descriptor
     int new_socket;               //accepted connection file descriptor
     struct sockaddr_in address;     //structure for the IP address and port
@@ -41,12 +62,24 @@ int main(int argc, char* argv[]){
     server_fd=socket(AF_INET, SOCK_STREAM, 0);
     if(server_fd < 0){ 
         perror("socket opening failed");
+#ifdef _WIN32
+        WSACleanup();
+#endif
         return 1;
     }
 
     //PORT CONFIGURATION (avoids the "address already in use" error)
+#ifdef _WIN32
+    // Windows expects const char* and SO_REUSEPORT is not commonly used/standard here
+    if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt))){
+#else
     if(setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))){
+#endif
         perror("setsockopt error");
+        CLOSE_SOCKET(server_fd);
+#ifdef _WIN32
+        WSACleanup();
+#endif
         return 1;
     }
 
@@ -60,11 +93,19 @@ int main(int argc, char* argv[]){
     //BIND E LISTEN
     if(bind(server_fd, (struct sockaddr*)&address, sizeof(address))<0){
         perror("Bind failed");
+        CLOSE_SOCKET(server_fd);
+#ifdef _WIN32
+        WSACleanup();
+#endif
         return 1;
     }
 
     if (listen(server_fd, 10) < 0){ // listen control
         perror("Listen failed"); 
+        CLOSE_SOCKET(server_fd);
+#ifdef _WIN32
+        WSACleanup();
+#endif
         return 1; 
     }
 
@@ -89,7 +130,11 @@ int main(int argc, char* argv[]){
 
         if(new_socket<0){
             perror("error accepting connection");
-            sleep(1); // if there is a critical error it's better to stop for a moment
+#ifdef _WIN32 // if there is a critical error it's better to stop for a moment
+            Sleep(1000);
+#else
+            sleep(1);
+#endif
             continue;
         }
 
@@ -109,7 +154,7 @@ int main(int argc, char* argv[]){
             std::cerr<<"error: unable to open the file: "<<complete_path<<std::endl;
             std::string msg404="HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
             send(new_socket, msg404.c_str(), msg404.size(), 0);
-            close(new_socket);
+            CLOSE_SOCKET(new_socket);
             continue;
         }
 
@@ -144,9 +189,12 @@ int main(int argc, char* argv[]){
         std::cout<<"File '" << destination_file_name << "' sent successfully!"<<std::endl;
 
         file.close();
-        close(new_socket);
+        CLOSE_SOCKET(new_socket);
     }
 
-    close(server_fd);
+    CLOSE_SOCKET(server_fd);
+#ifdef _WIN32
+    WSACleanup();
+#endif
     return 0;
 }
