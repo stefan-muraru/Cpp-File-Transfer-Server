@@ -1,5 +1,5 @@
 #include <iostream>
-#include <fstream> // stream di files 
+#include <fstream> // stream of files 
 #include <string> // for strings
 #include <cstring>
 #include <vector> // for vectors
