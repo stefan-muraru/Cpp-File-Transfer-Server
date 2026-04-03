@@ -63,8 +63,8 @@ The server will start, display your local IP address, and stay active (listening
 ## Roadmap & Upcoming Goals
 You can follow the detailed progress of the work on my [Project Board](https://github.com/users/stefan-muraru/projects/3/views/1).
 
-- [ ] **Full Translation (In Progress)**: Converting all code comments and system logs from Italian to English to make the project international.
-- [ ] **Cross-Platform Support (Windows)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
+- [X] **Full Translation (Done)**: Converting all code comments and system logs from Italian to English to make the project international.
+- [ ] **Cross-Platform Support (Windows) (In progress)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
 - [ ] **Multi-file Support**: Implemented the ability to share entire folders or multiple files at once.
 - [ ] **Web Interface (UI)**: Replaced the direct download with a minimal HTML page for a better mobile user experience.
 - [ ] **HTTPS Security**: OpenSSL integration to secure data transfer within the local network.
