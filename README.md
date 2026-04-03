@@ -17,26 +17,55 @@ The program creates a basic HTTP server using **TCP Sockets**. It listens for in
 
 
 ## Installation & Usage
-***download the file "server.cpp"***
+First ***download*** the file ***"server.cpp"***
 ### How to compile the project:
+   ***Linux***
    ```bash
    g++ -std=c++17 server.cpp -o file_server
-```
+   ```
+
+   ***Windows***
+
+   is required to add the flag "-lws2_32".
+   
+   ```powershell
+   g++ server.cpp -o server.exe -lws2_32
+   ```
+   you can also use the `MinGW` or `g++` compiler.
+
+---
+
 ### How to run the command (server side)
    To share a file, pass its path as an argument when launching the program. If the filename has spaces, wrap it in quotes: 
+
+   ***Linux***
+
+   Run the server on Linux requires `sudo` to bind to port 80
    ```bash
    sudo ./file_server "your_file.pdf/.jpeg/ecc..."
-```
+   ```
+
+   ***Windows***
+   ```powershell
+   .\server.exe your_file.jpg
+   ```
+**IMPORTANT:**
+Firewall Note: When running the server for the first time, Windows might prompt you to allow the application through the Firewall. Ensure you grant access to "Private" and/or "Public" networks for the connection to work.
+
+---
+
 The server will start, display your local IP address, and stay active (listening on port 8080) until you manually stop it with ```Ctrl+c```
-### Hot to download (client side)
-1. ***Find the IP***: The program will print your local IP in the terminal (e.g., 192.168.1.106).
-2. ***Open browser***: On your iPhone, Android, or another PC, open Safari/Chrome and type:
+## Hot to download (client side)
+Ensure **both** the PC and the Phone are connected to **the same Wi-Fi network**
+1. ***Start the server on your PC*** by using the commands written above
+2. ***Find the IP***: The program will print your local IP in the terminal (e.g., 192.168.1.106).
+3. ***Open browser***: On your iPhone, Android, or another PC, open Safari/Chrome and type:
    ```Plaintext
    http://192.168.1.xxx:80
    ```
    (Replace 192.168.1.xxx with the IP shown in your terminal).
-3. ***HTTP ONLY***: You must use ```http://``` and NOT ```https://```. Most mobile browsers try to force HTTPS, which will cause a connection error because this server does not use SSL.
-4. ***Save***: A download prompt will appear on your screen. Click *"Download"* to save the file to your *"Files"* or *"Downloads"* folder.
+4. ***HTTP ONLY***: You must use ```http://``` and NOT ```https://```. Most mobile browsers try to force HTTPS, which will cause a connection error because this server does not use SSL.
+5. ***Save***: A download prompt will appear on your screen. Click *"Download"* to save the file to your *"Files"* or *"Downloads"* folder.
 
 ## Critical Troubleshooting & Security
 1. ***The Firewall (UFW) - "Connection Refused"***
