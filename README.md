@@ -61,7 +61,7 @@ The server will start, display your local IP address, and stay active (listening
 * **Request Clearing**: The server reads the client's request buffer (`recv`) before responding to ensure the TCP window is clear, preventing protocol synchronization errors.
 
 ## Roadmap & Upcoming Goals
-You can follow the detailed progress of the work on my [Project Board](INSERT YOUR PROJECT LINK HERE).
+You can follow the detailed progress of the work on my [Project Board](https://github.com/users/stefan-muraru/projects/3/views/1).
 
 - [ ] **Full Translation (In Progress)**: Converting all code comments and system logs from Italian to English to make the project international.
 - [ ] **Cross-Platform Support (Windows)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
