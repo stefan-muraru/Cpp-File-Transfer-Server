@@ -2,7 +2,8 @@
 This project is licensed under the MIT License - feel free to use, modify, and share it!
 
 # C++ Local File Sharing Server
->🚧 **Current status:** Cross-platform (Windows) support implementation in progress
+>🚧 **Current status:** Cross-platform (Windows) support implementation in progress...  
+***WARNING***: The program does not yet support Windows
 
 A simple, high-performance command-line utility written in **C++** to share files from a **Linux** or **Windows** machine to any device with a web browser (optimized for **iPhone/iOS**) over a local network.
 
