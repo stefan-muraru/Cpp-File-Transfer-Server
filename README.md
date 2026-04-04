@@ -99,4 +99,4 @@ You can follow the detailed progress of the work on my [Project Board](https://g
 - [ ] **HTTPS Security**: OpenSSL integration to secure data transfer within the local network.
 - [ ] **Progress Bar**: Real-time display of the loading percentage in the terminal.
 
-A Project Done (and in progress) By Stefan Muraru.
+*A Project Done (and in progress) By Stefan Muraru.*
