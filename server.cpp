@@ -1,3 +1,4 @@
+/*-------------------------implementation of the feature to apload multi-files----------------------*/
 #include <iostream>
 #include <fstream> // stream of files 
 #include <string> // for strings
@@ -5,6 +6,7 @@
 #include <vector> // for vectors
 #include <filesystem> //to estract easily the name of the file
 #include <signal.h> //to mantain the signal during the download of the file
+#include <sstream> //to work and manipulate strings
 #ifdef _WIN32
     /*-------FOR WINDOWS-------*/
     #include <winsock2.h>  // library for windows
@@ -40,10 +42,16 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    //variables for the file name and path
-    std::string complete_path = argv[1];
-    //extract only the name(example: "image.jpg") from the full path
-    std::string destination_file_name=std::filesystem::path(complete_path).filename().string();
+    //MODIFICA: controlliamo se il processo è una directory
+    std::string base_dir=argv[1];
+    if(!std::filesystem::is_directory(base_dir)){
+        std::cerr<<"error: the path must be a directory for multi-file support.\n";
+        return 1;
+    }
+    // //variables for the file name and path
+    // std::string complete_path = argv[1];
+    // //extract only the name(example: "image.jpg") from the full path
+    // std::string destination_file_name=std::filesystem::path(complete_path).filename().string();
 
 #ifdef _WIN32
     // WINSOCK INITIALIZATION (Strictly required for Windows)
@@ -116,7 +124,7 @@ int main(int argc, char* argv[]){
     //GRAFICAL INTERFACE (server side)
     std::cout<<"=========================================================================="<<std::endl;
     std::cout<<"        SERVER STARTED"<<std::endl;
-    std::cout<<"        file being shared: "<<destination_file_name<<std::endl;
+    std::cout<<"        Sharing Folder: "<<base_dir<<std::endl;
     std::cout<<"        connect with your phone at http://192.168.1.106:"<<port<<std::endl;
     std::cout<<"        (CAUTION: use HTTP, not HTTPS!)"<<std::endl;
     std::cout<<"=========================================================================="<<std::endl;
@@ -152,47 +160,112 @@ int main(int argc, char* argv[]){
             // std::cout<<"client request: \n"<<client_request<<std::endl;
         }
 
-        //open file in binary mode
-        std::ifstream file(complete_path, std::ios::binary | std::ios::ate);
-        if(!file.is_open()){
-            std::cerr<<"error: unable to open the file: "<<complete_path<<std::endl;
-            std::string msg404="HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-            send(new_socket, msg404.c_str(), msg404.size(), 0);
-            CLOSE_SOCKET(new_socket);
-            continue;
+        /*----------------------INIZIO MODIFICA DEL CICLO-------------------------*/
+
+        //ESTRAZIONE DEL PERCORSO RICHIESTO (parsing GET)
+        std::string request_str(client_request);
+        std::string requested_path = "/";
+        size_t get_pos=request_str.find("GET ");
+        if(get_pos!=std::string::npos){
+            size_t start=get_pos+4;
+            size_t end=request_str.find(" ", start);
+            requested_path=request_str.substr(start, end-start);
         }
 
-        //calculate size
-        std::streamsize size_file=file.tellg();
-        file.seekg(0, std::ios::beg);
+        //CASO A: RICHIESTA DELLA PAGINA PRINCIPALE (LISTA DEI FILE)
+        if(requested_path=="/" || requested_path=="/index.html"){
+            std::string html="<html><head><title>File Server</title><meta charset='UTF-8'></head><body>";
+            html+="<h1>Shared Files:</h1><ul>";
 
-        //HTTP header construction (using original file name)
-        std::string header=
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: application/octet-stream\r\n"
-            "Content-Disposition: attachment; filename=\"" + destination_file_name + "\"\r\n"
-            "Content-Length: " + std::to_string(size_file) + "\r\n"
-            "Connection: close\r\n\r\n";
+            for(const auto& entry : std::filesystem::directory_iterator(base_dir)){
+                std::string name = entry.path().filename().string();
+                html+="<li><a href=\"/" + name + "\">" + name + "</a></li>";
+            }
+            html+= "</ul></body></html>";
 
-        //send header
-        send(new_socket, header.c_str(), (int)header.size(), 0);
+            std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(html.size()) + "\r\n\r\n" + html;
+            send(new_socket, response.c_str(), (int)response.size(), 0);
+        }else{
+            //CASO B: RICHIESTA DI UN FILE SPECIFICO
+            //rimuovo "/" iniziale e unisco al percorso della cartella
+            std::string file_name=requested_path.substr(1);
+            //decodifica minima per gli spazi (trasforma %20 in spazio)
+            size_t pos;
+            while((pos=file_name.find("%20"))!=std::string::npos)file_name.replace(pos, 3, " ");
+            
+            std::filesystem::path file_path = std::filesystem::path(base_dir) / file_name;
+            if(std::filesystem::exists(file_path) && std::filesystem::is_regular_file(file_path)){
+                std::ifstream file(file_path, std::ios::binary | std::ios::ate);
+                std::streamsize size_file=file.tellg();
+                file.seekg(0, std::ios::beg);
 
-        //send content in blocks
-        std::vector<char> buffer(16384); //16KB buffer
-        while(file.good()){
-            file.read(buffer.data(), buffer.size());
-            std::streamsize bytes_readed=file.gcount();
-            if(bytes_readed>0){
-                if(send(new_socket, buffer.data(), (int)bytes_readed, 0)<0){
-                    std::cerr<<"connection interrupted by PHONE"<<std::endl;
-                    break;
+                std::string header= "HTTP/1.1 200 OK\r\n"
+                                    "Content-Type: application/octet-stream\r\n"
+                                    "Content-Disposition: attachment; filename=\"" + file_name + "\"\r\n"
+                                    "Content-Length: " + std::to_string(size_file) + "\r\n"
+                                    "Connection: close\r\n\r\n";
+                
+                send(new_socket, header.c_str(), (int)header.size(), 0);
+                
+                std::vector<char> buffer(16384);
+                while(file.good()){
+                    file.read(buffer.data(), buffer.size());
+                    std::streamsize bytes_read=file.gcount();
+                    if(bytes_read>0){
+                        if(send(new_socket, buffer.data(), (int)bytes_read, 0)<0) break;
+                    }
                 }
+                std::cout<<"Sent: "<<file_name<<std::endl;
+            }else{
+                std::string msg404="HTTP/1.1 404 Not Found\r\nContent-length: 0\r\n\r\n";
+                send(new_socket, msg404.c_str(), (int)msg404.size(), 0);
             }
         }
 
-        std::cout<<"File '" << destination_file_name << "' sent successfully!"<<std::endl;
 
-        file.close();
+
+
+        // //open file in binary mode
+        // std::ifstream file(complete_path, std::ios::binary | std::ios::ate);
+        // if(!file.is_open()){
+        //     std::cerr<<"error: unable to open the file: "<<complete_path<<std::endl;
+        //     std::string msg404="HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+        //     send(new_socket, msg404.c_str(), msg404.size(), 0);
+        //     CLOSE_SOCKET(new_socket);
+        //     continue;
+        // }
+
+        // //calculate size
+        // std::streamsize size_file=file.tellg();
+        // file.seekg(0, std::ios::beg);
+
+        // //HTTP header construction (using original file name)
+        // std::string header=
+        //     "HTTP/1.1 200 OK\r\n"
+        //     "Content-Type: application/octet-stream\r\n"
+        //     "Content-Disposition: attachment; filename=\"" + destination_file_name + "\"\r\n"
+        //     "Content-Length: " + std::to_string(size_file) + "\r\n"
+        //     "Connection: close\r\n\r\n";
+
+        // //send header
+        // send(new_socket, header.c_str(), (int)header.size(), 0);
+
+        // //send content in blocks
+        // std::vector<char> buffer(16384); //16KB buffer
+        // while(file.good()){
+        //     file.read(buffer.data(), buffer.size());
+        //     std::streamsize bytes_readed=file.gcount();
+        //     if(bytes_readed>0){
+        //         if(send(new_socket, buffer.data(), (int)bytes_readed, 0)<0){
+        //             std::cerr<<"connection interrupted by PHONE"<<std::endl;
+        //             break;
+        //         }
+        //     }
+        // }
+
+        // std::cout<<"File '" << destination_file_name << "' sent successfully!"<<std::endl;
+
+        // file.close();
         CLOSE_SOCKET(new_socket);
     }
 
