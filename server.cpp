@@ -14,6 +14,8 @@
 
     #define CLOSE_SOCKET closesocket
     typedef int socklen_t; // Windows uses int for address length in accept()
+    typedef SOCKET socket_t; // <--socket type for windows
+    #define IS_VALID_SOCKET(s) ((s)!=INVALID_SOCKET) // CONTROL FOR WINDOWS
 #else
     /*-------FOR LINUX-------*/
     #include <sys/socket.h> //library for Linux socketset linux
@@ -21,6 +23,8 @@
     #include <unistd.h>     // for system functions like close()
 
     #define CLOSE_SOCKET close
+    typedef int socket_t; // <--socket type for linux
+    #define IS_VALID_SOCKET(s) ((s)>=0) // CONTROL FOR LINUX
 #endif
 
 int main(int argc, char* argv[]){
@@ -51,8 +55,8 @@ int main(int argc, char* argv[]){
 #endif
 
     //VARIABLE DECLARATION FOR THE SOCKET
-    int server_fd;                  //server socket file descriptor
-    int new_socket;               //accepted connection file descriptor
+    socket_t server_fd;                  //server socket file descriptor
+    socket_t new_socket;               //accepted connection file descriptor
     struct sockaddr_in address;     //structure for the IP address and port
     int opt=1;                      //option for reusing the port
     int port=80;                 //used port
@@ -60,7 +64,7 @@ int main(int argc, char* argv[]){
     //SOCKET CREATION
     //AF_INET: IPv4 | SOCK_STREAM: TCP
     server_fd=socket(AF_INET, SOCK_STREAM, 0);
-    if(server_fd < 0){ 
+    if(!IS_VALID_SOCKET(server_fd)){ 
         perror("socket opening failed");
 #ifdef _WIN32
         WSACleanup();
@@ -128,7 +132,7 @@ int main(int argc, char* argv[]){
         // client_addr & client_len, not the structure of the server!
         new_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len); //new socket
 
-        if(new_socket<0){
+        if(!IS_VALID_SOCKET(new_socket)){
             perror("error accepting connection");
 #ifdef _WIN32 // if there is a critical error it's better to stop for a moment
             Sleep(1000);
@@ -171,7 +175,7 @@ int main(int argc, char* argv[]){
             "Connection: close\r\n\r\n";
 
         //send header
-        send(new_socket, header.c_str(), header.size(), 0);
+        send(new_socket, header.c_str(), (int)header.size(), 0);
 
         //send content in blocks
         std::vector<char> buffer(16384); //16KB buffer
@@ -179,7 +183,7 @@ int main(int argc, char* argv[]){
             file.read(buffer.data(), buffer.size());
             std::streamsize bytes_readed=file.gcount();
             if(bytes_readed>0){
-                if(send(new_socket, buffer.data(), bytes_readed, 0)<0){
+                if(send(new_socket, buffer.data(), (int)bytes_readed, 0)<0){
                     std::cerr<<"connection interrupted by PHONE"<<std::endl;
                     break;
                 }
