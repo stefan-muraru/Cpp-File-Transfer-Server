@@ -2,8 +2,7 @@
 This project is licensed under the MIT License - feel free to use, modify, and share it!
 
 # C++ Local File Sharing Server
->🚧 **Current status:** Cross-platform (Windows) support implementation in progress...  
-***WARNING***: The program does not yet support Windows
+>🚧 **Current status:** Multi-file support implementation in progress...  
 
 A simple, high-performance command-line utility written in **C++** to share files from a **Linux** or **Windows** machine to any device with a web browser (optimized for **iPhone/iOS**) over a local network.
 
@@ -94,7 +93,7 @@ Ensure **both** the PC and the Phone are connected to **the same Wi-Fi network**
 You can follow the detailed progress of the work on my [Project Board](https://github.com/users/stefan-muraru/projects/3/views/1).
 
 - [X] **Full Translation (Done)**: Converting all code comments and system logs from Italian to English to make the project international.
-- [ ] **Cross-Platform Support (Windows) (In progress)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
+- [X] **Cross-Platform Support (Windows) (In progress)**: Implementation of the `Winsock2` libraries to make the server compatible with Windows systems as well as Linux.
 - [ ] **Multi-file Support**: Implemented the ability to share entire folders or multiple files at once.
 - [ ] **Web Interface (UI)**: Replaced the direct download with a minimal HTML page for a better mobile user experience.
 - [ ] **HTTPS Security**: OpenSSL integration to secure data transfer within the local network.
