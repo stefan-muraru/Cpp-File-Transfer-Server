@@ -2,7 +2,7 @@ name: Cross-Platform Build Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feat-multi-file" ]
   pull_request:
     branches: [ "main" ]
 
