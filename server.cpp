@@ -132,7 +132,7 @@ int main(int argc, char* argv[]){
         // client_addr & client_len, not the structure of the server!
         new_socket = accept(server_fd, (struct sockaddr*)&client_addr, &client_len); //new socket
 
-        if(!IS_VALID_SOCKET(new_socket)){
+        if(!IS_VALID_SOCKET(new_socket)){ 
             perror("error accepting connection");
 #ifdef _WIN32 // if there is a critical error it's better to stop for a moment
             Sleep(1000);

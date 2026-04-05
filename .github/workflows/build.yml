@@ -24,4 +24,4 @@ jobs:
 
     - name: Compile (Windows)
       if: runner.os == 'Windows'
-      run: g++ server.cpp -o server_win.exe
+      run: g++ server.cpp -o server_win.exe -lws2_32
